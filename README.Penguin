@@ -1,0 +1,84 @@
+Hi!  Welcome to Penguin 1.0.
+Thu Jan  4 17:03:25 CST 1996
+
+WHAT IT IS
+
+    Penguin is a collection of high level interfaces which allow one to
+    send perl scripts to a remote host for execution and for that host
+    to securely and safely assign rights [and blame] to the perl code
+    so that it doesn't do anything unexpected.
+
+    As of Thu Jan  4 16:05:26 CST 1996, Penguin version 1.0 is released.
+    This is an early beta; the API has not been frozen, and indeed will
+    be changed, perhaps drastically and repeatedly, in the near future.
+    However, it implements the sending of digitally signed perl scripts
+    across TCP/IP networks and the receipt and unravelling functions
+    on the host side.
+
+THE IMPLEMENTED API
+
+
+    (undef) Penguin::set_portnumber(NUMBER)
+        
+        sets the TCP/IP socket port number to NUMBER, always returns true.
+
+    (scalar) Penguin::start_listening(undef)
+        
+        starts a socket listening on the previously specified port,
+        or port 5059 if none has been specified.  Returns a negative
+        number if the process fails somehow, or 1 on success.
+
+    ($signing_authority, $code) Penguin::getcodeifthere(WAIT_TIME_IN_SECS)
+
+        listens on the socket started by start_listening.  Returns a
+        negative number if something goes wrong; returns 0 if no code
+        arrived within WAIT_TIME_IN_SECS.  If code did arrive, it unwraps
+        the code, determines who signed it, and returns the signer's
+        name and the code she signed as a list.
+
+    ($opmask) Penguin::getopmask(SIGNING_AUTHORITY)
+
+        looks in the user's Penguin opmaskfile for the entry associated
+        with the specified signing authority, and returns the appropriate
+        opmask.  Returns the opmask associated with the default entry if
+        the signing authority is not found.  Errors out if something
+        else happens.
+
+    (scalar) Penguin::sendcode(CODESTRING, TARGETMACHINE)
+
+        digitally signs the code in CODESTRING and attempts to deliver
+        it to the previously specified port, or port 5059 if none has
+        been specified, on the target machine TARGETMACHINE.  Returns
+        1 in case of success, other values on failure.  Uses PGP.pm's
+        sign(), so be sure you've run PGP::setpassword before you 
+        sendcode(), or the signing process will fail.  This is probably
+        an API bug.
+
+
+UNIMPLEMENTED API AND CHATTY COMMENTARY ON SAME
+    
+
+    (return value) Penguin::synchronous_sendcode(CODESTRING, TARGETMACHINE)
+
+        synchronous version of sendcode which returns the value of
+        the code executed on the remote machine.  Using the current
+        architecture, this would be hard -- and since the API segments
+        the receipt from the execution, this thing might wait around
+        for a bit before the execution actually takes place, if the
+        receiver likes.
+
+    (void) Penguin::allow_op(SIGNING_AUTHORITY, OPERATION)
+    (void) Penguin::deny_op(SIGNING_AUTHORITY, OPERATION)
+
+        sets/unsets the appropriate bit in the signing authority's opmask.
+
+    (return value) Penguin::execute(CODESTRING, RIGHTS)
+
+        executes the code in CODESTRING using the opmask from RIGHTS
+        inside a trusted compartment after applying whatever rights
+        from RIGHTS (rlimits, etc.) are applicable to the compartment.
+
+    (return value) Penguin::return([socket?], RETURN_VALUE)
+
+        works with the synchronous version of sendcode.  You know,
+        I'm starting to think more and more about objects.
